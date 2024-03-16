@@ -5,18 +5,21 @@
 }
 
 .subscribe {
-  position: relative;
+  .inline-btn-box {
+    .input-text-block {
+      @include media-breakpoint-between(md, lg) {
+        flex-direction: column;
 
-  .input-btn {
-    position: absolute;
-    right: 0;
-    height: 100%;
-    border-width: 1px !important;
+        .input-text {
+          border-radius: $border-radius-default;
+        }
 
-    @include media-breakpoint-between(md, lg) {
-      position: relative;
-      width: 100%;
-      margin-top: 10px;
+        .custom-btn-primary {
+          margin-top: 10px;
+          border-left: $border-default !important;
+          border-radius: $border-radius-default !important;
+        }
+      }
     }
   }
 }

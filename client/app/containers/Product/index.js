@@ -5,65 +5,32 @@
  */
 
 import React from 'react';
+
 import { connect } from 'react-redux';
+import { Switch, Route } from 'react-router-dom';
 
 import actions from '../../actions';
 
-import AddProduct from '../../components/AddProduct';
-import Table from '../../components/Table';
-import SubPage from '../../components/SubPage';
+// import { ROLES } from '../../constants';
+import List from './List';
+import Add from './Add';
+import Edit from './Edit';
+import Page404 from '../../components/Common/Page404';
 
 class Product extends React.PureComponent {
-  componentDidMount() {
-    this.props.fetchBrandsSelect();
-    this.props.fetchProducts();
-  }
-
   render() {
-    const {
-      productFormData,
-      productChange,
-      addProduct,
-      products,
-      columns,
-      toggleAddProduct,
-      isProductAddOpen,
-      deleteProduct,
-      brandSelect,
-      selectedBrands,
-      brands
-    } = this.props;
+    const { user } = this.props;
 
     return (
-      <div className='product'>
-        <SubPage
-          title={isProductAddOpen ? 'Add Product' : 'Product List'}
-          isMenuOpen={isProductAddOpen}
-          toggleMenu={toggleAddProduct}
-        >
-          {isProductAddOpen ? (
-            <AddProduct
-              productFormData={productFormData}
-              productChange={productChange}
-              addProduct={addProduct}
-              brandSelect={brandSelect}
-              selectedBrands={selectedBrands}
-              brands={brands}
-            />
-          ) : (
-            <Table
-              data={products}
-              columns={columns}
-              striped={true}
-              hover={true}
-              condensed={true}
-              csv={true}
-              search={true}
-              isRowEvents={true}
-              clickAction={(id, index) => deleteProduct(id, index)}
-            />
-          )}
-        </SubPage>
+      <div className='product-dashboard'>
+        <Switch>
+          <Route exact path='/dashboard/product' component={List} />
+          <Route exact path='/dashboard/product/edit/:id' component={Edit} />
+          {/* {user.role === ROLES.Admin && ( */}
+          <Route exact path='/dashboard/product/add' component={Add} />
+          {/* )} */}
+          <Route path='*' component={Page404} />
+        </Switch>
       </div>
     );
   }
@@ -71,16 +38,8 @@ class Product extends React.PureComponent {
 
 const mapStateToProps = state => {
   return {
-    productFormData: state.product.productFormData,
-    products: state.product.products,
-    columns: state.product.columns,
-    isProductAddOpen: state.product.isProductAddOpen,
-    selectedBrands: state.brand.selectedBrands,
-    brands: state.brand.brandsSelect
+    user: state.account.user
   };
 };
 
-export default connect(
-  mapStateToProps,
-  actions
-)(Product);
+export default connect(mapStateToProps, actions)(Product);

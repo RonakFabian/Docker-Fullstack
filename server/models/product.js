@@ -19,10 +19,16 @@ const ProductSchema = new Schema({
     type: String,
     trim: true
   },
-  slug: { type: String, slug: 'name', unique: true },
-  image: {
-    data: Buffer,
-    contentType: String
+  slug: {
+    type: String,
+    slug: 'name',
+    unique: true
+  },
+  imageUrl: {
+    type: String
+  },
+  imageKey: {
+    type: String
   },
   description: {
     type: String,
@@ -34,9 +40,18 @@ const ProductSchema = new Schema({
   price: {
     type: Number
   },
+  taxable: {
+    type: Boolean,
+    default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   brand: {
     type: Schema.Types.ObjectId,
-    ref: 'Brand'
+    ref: 'Brand',
+    default: null
   },
   updated: Date,
   created: {

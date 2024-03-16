@@ -5,65 +5,31 @@
  */
 
 import React from 'react';
+
 import { connect } from 'react-redux';
+import { Switch, Route } from 'react-router-dom';
 
 import actions from '../../actions';
-
-import AddCategory from '../../components/AddCategory';
-import Table from '../../components/Table';
-import SubPage from '../../components/SubPage';
+// import { ROLES } from '../../constants';
+import List from './List';
+import Add from './Add';
+import Edit from './Edit';
+import Page404 from '../../components/Common/Page404';
 
 class Category extends React.PureComponent {
-  componentDidMount() {
-    this.props.fetchCategories();
-    this.props.fetchProductsSelect();
-  }
-
   render() {
-    const {
-      categoryFormData,
-      categoryChange,
-      addCategory,
-      categories,
-      columns,
-      isCategoryAddOpen,
-      toggleAddCategory,
-      deleteCategory,
-      products,
-      selectedProducts,
-      productSelect
-    } = this.props;
+    const { user } = this.props;
 
     return (
-      <div className='category'>
-        <SubPage
-          title={isCategoryAddOpen ? 'Add Category' : 'Category List'}
-          isMenuOpen={isCategoryAddOpen}
-          toggleMenu={toggleAddCategory}
-        >
-          {isCategoryAddOpen ? (
-            <AddCategory
-              categoryFormData={categoryFormData}
-              categoryChange={categoryChange}
-              addCategory={addCategory}
-              products={products}
-              selectedProducts={selectedProducts}
-              productSelect={productSelect}
-            />
-          ) : (
-            <Table
-              data={categories}
-              columns={columns}
-              striped={true}
-              hover={true}
-              condensed={true}
-              csv={true}
-              search={true}
-              isRowEvents={true}
-              clickAction={(id, index) => deleteCategory(id, index)}
-            />
-          )}
-        </SubPage>
+      <div className='category-dashboard'>
+        <Switch>
+          <Route exact path='/dashboard/category' component={List} />
+          <Route exact path='/dashboard/category/edit/:id' component={Edit} />
+          {/* {user.role === ROLES.Admin && ( */}
+          <Route exact path='/dashboard/category/add' component={Add} />
+          {/* )} */}
+          <Route path='*' component={Page404} />
+        </Switch>
       </div>
     );
   }
@@ -71,16 +37,8 @@ class Category extends React.PureComponent {
 
 const mapStateToProps = state => {
   return {
-    categoryFormData: state.category.categoryFormData,
-    isCategoryAddOpen: state.category.isCategoryAddOpen,
-    categories: state.category.categories,
-    columns: state.category.columns,
-    products: state.product.productsSelect,
-    selectedProducts: state.product.selectedProducts
+    user: state.account.user
   };
 };
 
-export default connect(
-  mapStateToProps,
-  actions
-)(Category);
+export default connect(mapStateToProps, actions)(Category);

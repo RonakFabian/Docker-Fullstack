@@ -11,51 +11,60 @@ import { Row, Col } from 'reactstrap';
 import { Redirect, Link } from 'react-router-dom';
 
 import actions from '../../actions';
-import Input from '../../components/Input';
+
+import Input from '../../components/Common/Input';
+import Button from '../../components/Common/Button';
 
 class ForgotPassword extends React.PureComponent {
   render() {
     const {
       authenticated,
       forgotFormData,
+      formErrors,
       forgotPasswordChange,
       forgotPassowrd
     } = this.props;
 
     if (authenticated) return <Redirect to='/dashboard' />;
 
+    const handleSubmit = event => {
+      event.preventDefault();
+      forgotPassowrd();
+    };
+
     return (
       <div className='forgot-password-form'>
-        <h1>Forgot Password</h1>
+        <h3>Forgot Password</h3>
         <hr />
-        <Row>
-          <Col xs='12' md='6'>
-            <Input
-              type={'text'}
-              label={'Email Address'}
-              name={'email'}
-              placeholder={'Please Enter Your Email'}
-              value={forgotFormData.email}
-              onInputChange={(name, value) => {
-                forgotPasswordChange(name, value);
-              }}
+        <form onSubmit={handleSubmit}>
+          <Row>
+            <Col xs='12' md='6'>
+              <Input
+                type={'text'}
+                error={formErrors['email']}
+                label={'Email Address'}
+                name={'email'}
+                placeholder={'Please Enter Your Email'}
+                value={forgotFormData.email}
+                onInputChange={(name, value) => {
+                  forgotPasswordChange(name, value);
+                }}
+              />
+            </Col>
+          </Row>
+          <hr />
+          <div className='d-flex flex-column flex-md-row align-items-md-center justify-content-between'>
+            <Button
+              type='submit'
+              variant='primary'
+              text='Send Email'
+              className='mb-3 mb-md-0'
             />
-          </Col>
-        </Row>
-        <hr />
-        <div className='login-actions'>
-          <button
-            className='input-btn'
-            type='submit'
-            onClick={() => forgotPassowrd()}
-          >
-            Send Email
-          </button>
-
-          <Link className='redirect-link' to={'/login'}>
-            Back to login
-          </Link>
-        </div>
+            <Link className='redirect-link' to={'/login'}>
+              Back to login
+            </Link>
+          </div>
+        </form>
       </div>
     );
   }
@@ -64,11 +73,9 @@ class ForgotPassword extends React.PureComponent {
 const mapStateToProps = state => {
   return {
     authenticated: state.authentication.authenticated,
-    forgotFormData: state.forgotPassword.forgotFormData
+    forgotFormData: state.forgotPassword.forgotFormData,
+    formErrors: state.forgotPassword.formErrors
   };
 };
 
-export default connect(
-  mapStateToProps,
-  actions
-)(ForgotPassword);
+export default connect(mapStateToProps, actions)(ForgotPassword);

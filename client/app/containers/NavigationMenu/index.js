@@ -5,41 +5,57 @@
  */
 
 import React from 'react';
+
 import { connect } from 'react-redux';
+import { NavLink } from 'react-router-dom';
+import { Container } from 'reactstrap';
 
 import actions from '../../actions';
 
-import { NavLink } from 'react-router-dom';
+import Button from '../../components/Common/Button';
+import { CloseIcon } from '../../components/Common/Icon';
 
 class NavigationMenu extends React.PureComponent {
-  componentDidMount() {
-    this.props.fetchCategories();
-  }
-
   render() {
     const { isMenuOpen, categories, toggleMenu } = this.props;
+
+    const handleCategoryClick = () => {
+      this.props.toggleMenu();
+    };
 
     return (
       <div className='navigation-menu'>
         <div className='menu-header'>
-          <h1>MERN Store</h1>
-
-          {isMenuOpen && <span className='close-icon' onClick={toggleMenu} />}
+          {isMenuOpen && (
+            <Button
+              borderless
+              variant='empty'
+              ariaLabel='close the menu'
+              icon={<CloseIcon />}
+              onClick={toggleMenu}
+            />
+          )}
         </div>
         <div className='menu-body'>
-          <ul className='menu-list'>
-            {categories.map((link, index) => (
-              <li key={index} className='menu-item'>
-                <NavLink
-                  to={'/shop/category/' + link.slug}
-                  activeClassName='active-link'
-                  exact
-                >
-                  {link.name}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
+          <Container>
+            <h3 className='menu-title'>Shop By Category</h3>
+            <nav role='navigation'>
+              <ul className='menu-list'>
+                {categories.map((link, index) => (
+                  <li key={index} className='menu-item'>
+                    <NavLink
+                      onClick={handleCategoryClick}
+                      to={'/shop/category/' + link.slug}
+                      activeClassName='active-link'
+                      exact
+                    >
+                      {link.name}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </Container>
         </div>
       </div>
     );
@@ -49,11 +65,8 @@ class NavigationMenu extends React.PureComponent {
 const mapStateToProps = state => {
   return {
     isMenuOpen: state.navigation.isMenuOpen,
-    categories: state.category.categories
+    categories: state.category.storeCategories
   };
 };
 
-export default connect(
-  mapStateToProps,
-  actions
-)(NavigationMenu);
+export default connect(mapStateToProps, actions)(NavigationMenu);

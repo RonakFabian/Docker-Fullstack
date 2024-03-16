@@ -4,14 +4,19 @@
  *
  */
 
-import { CONTACT_FORM_CHANGE, CONTACT_RESET } from './constants';
+import {
+  CONTACT_FORM_CHANGE,
+  SET_CONTACT_FORM_ERRORS,
+  CONTACT_FORM_RESET
+} from './constants';
 
 const initialState = {
   contactFormData: {
     name: '',
     email: '',
     message: ''
-  }
+  },
+  formErrors: {}
 };
 
 const contactReducer = (state = initialState, action) => {
@@ -21,14 +26,20 @@ const contactReducer = (state = initialState, action) => {
         ...state,
         contactFormData: { ...state.contactFormData, ...action.payload }
       };
-    case CONTACT_RESET:
+    case SET_CONTACT_FORM_ERRORS:
+      return {
+        ...state,
+        formErrors: action.payload
+      };
+    case CONTACT_FORM_RESET:
       return {
         ...state,
         contactFormData: {
           name: '',
           email: '',
           message: ''
-        }
+        },
+        formErrors: {}
       };
     default:
       return state;

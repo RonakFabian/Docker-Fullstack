@@ -20,7 +20,11 @@ const CategorySchema = new Schema({
     type: String,
     trim: true
   },
-  slug: { type: String, slug: 'name', unique: true },
+  slug: {
+    type: String,
+    slug: 'name',
+    unique: true
+  },
   image: {
     data: Buffer,
     contentType: String
@@ -28,6 +32,10 @@ const CategorySchema = new Schema({
   description: {
     type: String,
     trim: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
   products: [
     {

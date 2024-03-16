@@ -4,15 +4,21 @@
  *
  */
 
-import { ACCOUNT_CHANGE, FETCH_PROFILE, TOGGLE_RESET_FORM } from './constants';
+import {
+  ACCOUNT_CHANGE,
+  FETCH_PROFILE,
+  CLEAR_ACCOUNT,
+  SET_PROFILE_LOADING
+} from './constants';
 
 const initialState = {
-  profile: {
+  user: {
     firstName: '',
-    lastName: ''
+    lastName: '',
+    provider: '',
+    role: ''
   },
-  user: {},
-  isFormOpen: false
+  isLoading: false
 };
 
 const accountReducer = (state = initialState, action) => {
@@ -20,16 +26,32 @@ const accountReducer = (state = initialState, action) => {
     case ACCOUNT_CHANGE:
       return {
         ...state,
-        profile: { ...state.profile, ...action.payload }
+        user: {
+          ...state.user,
+          ...action.payload
+        }
       };
     case FETCH_PROFILE:
       return {
         ...state,
-        profile: { ...state.profile, ...action.payload.profile },
-        user: { ...state.user, ...action.payload }
+        user: {
+          ...state.user,
+          ...action.payload
+        }
       };
-    case TOGGLE_RESET_FORM:
-      return { ...state, isFormOpen: !state.isFormOpen };
+    case CLEAR_ACCOUNT:
+      return {
+        ...state,
+        user: {
+          firstName: '',
+          lastName: ''
+        }
+      };
+    case SET_PROFILE_LOADING:
+      return {
+        ...state,
+        isLoading: action.payload
+      };
     default:
       return state;
   }

@@ -5,49 +5,71 @@
  */
 
 import React from 'react';
-import { connect } from 'react-redux';
 
+import { connect } from 'react-redux';
 import { Switch, Route } from 'react-router-dom';
 import { Container } from 'reactstrap';
-import cookie from 'react-cookies';
 
 import actions from '../../actions';
 
 // routes
-import LoginPage from '../Login';
-import SignupPage from '../Signup';
+import Login from '../Login';
+import Signup from '../Signup';
+import MerchantSignup from '../MerchantSignup';
 import HomePage from '../Homepage';
 import Dashboard from '../Dashboard';
+import Support from '../Support';
 import Navigation from '../Navigation';
 import Authentication from '../Authentication';
 import Notification from '../Notification';
 import ForgotPassword from '../ForgotPassword';
 import ResetPassword from '../ResetPassword';
 import Shop from '../Shop';
-import BrandPage from '../BrandPage';
+import BrandsPage from '../BrandsPage';
 import ProductPage from '../ProductPage';
 import Sell from '../Sell';
 import Contact from '../Contact';
 import OrderSuccess from '../OrderSuccess';
+import OrderPage from '../OrderPage';
+import AuthSuccess from '../AuthSuccess';
 
-import Page404 from '../../components/Page404';
-import Footer from '../../components/Footer';
+import Footer from '../../components/Common/Footer';
+import Page404 from '../../components/Common/Page404';
+import { CART_ITEMS } from '../../constants';
 
 class Application extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    this.handleStorage = this.handleStorage.bind(this);
+  }
   componentDidMount() {
-    const user = cookie.load('user');
+    const token = localStorage.getItem('token');
 
-    if (user != undefined) {
-      this.props.fetchProfile(user);
+    if (token) {
+      this.props.fetchProfile();
     }
 
     this.props.handleCart();
+
+    document.addEventListener('keydown', this.handleTabbing);
+    document.addEventListener('mousedown', this.handleMouseDown);
+    window.addEventListener('storage', this.handleStorage);
   }
 
-  componentDidUpdate(prevProps) {
-    if (this.props.authenticated !== prevProps.authenticated) {
-      this.props.handleCartStatus();
+  handleStorage(e) {
+    if (e.key === CART_ITEMS) {
+      this.props.handleCart();
     }
+  }
+
+  handleTabbing(e) {
+    if (e.keyCode === 9) {
+      document.body.classList.add('user-is-tabbing');
+    }
+  }
+
+  handleMouseDown() {
+    document.body.classList.remove('user-is-tabbing');
   }
 
   render() {
@@ -63,20 +85,28 @@ class Application extends React.PureComponent {
                 <Route path='/shop' component={Shop} />
                 <Route path='/sell' component={Sell} />
                 <Route path='/contact' component={Contact} />
-                <Route path='/brands' component={BrandPage} />
+                <Route path='/brands' component={BrandsPage} />
                 <Route path='/product/:slug' component={ProductPage} />
                 <Route path='/order/success/:id' component={OrderSuccess} />
-                <Route path='/login' component={LoginPage} />
-                <Route path='/register' component={SignupPage} />
+                <Route path='/order/:id' component={OrderPage} />
+                <Route path='/login' component={Login} />
+                <Route path='/register' component={Signup} />
+                <Route
+                  path='/merchant-signup/:token'
+                  component={MerchantSignup}
+                />
                 <Route path='/forgot-password' component={ForgotPassword} />
                 <Route
                   path='/reset-password/:token'
                   component={ResetPassword}
                 />
+                <Route path='/auth/success' component={AuthSuccess} />
+                <Route path='/support' component={Authentication(Support)} />
                 <Route
                   path='/dashboard'
                   component={Authentication(Dashboard)}
                 />
+                <Route path='/404' component={Page404} />
                 <Route path='*' component={Page404} />
               </Switch>
             </div>
@@ -90,7 +120,8 @@ class Application extends React.PureComponent {
 
 const mapStateToProps = state => {
   return {
-    authenticated: state.authentication.authenticated
+    authenticated: state.authentication.authenticated,
+    products: state.product.storeProducts
   };
 };
 

@@ -1,4 +1,7 @@
 const Mongoose = require('mongoose');
+
+const { MERCHANT_STATUS } = require('../constants');
+
 const { Schema } = Mongoose;
 
 // Merchant Schema
@@ -13,21 +16,30 @@ const MerchantSchema = new Schema({
   phoneNumber: {
     type: String
   },
-  brand: {
+  brandName: {
     type: String
   },
   business: {
     type: String,
     trim: true
   },
-  isApproved: {
+  isActive: {
     type: Boolean,
     default: false
   },
+  brand: {
+    type: Schema.Types.ObjectId,
+    ref: 'Brand',
+    default: null
+  },
   status: {
     type: String,
-    default: 'Waiting Approval',
-    enum: ['Not Active', , 'Not Active', 'Waiting Approval', 'Rejected']
+    default: MERCHANT_STATUS.Waiting_Approval,
+    enum: [
+      MERCHANT_STATUS.Waiting_Approval,
+      MERCHANT_STATUS.Rejected,
+      MERCHANT_STATUS.Approved
+    ]
   },
   updated: Date,
   created: {

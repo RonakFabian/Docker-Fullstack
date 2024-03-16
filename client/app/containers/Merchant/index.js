@@ -5,33 +5,29 @@
  */
 
 import React from 'react';
+
 import { connect } from 'react-redux';
+import { Switch, Route } from 'react-router-dom';
 
 import actions from '../../actions';
-
-import Table from '../../components/Table';
-import SubPage from '../../components/SubPage';
+import { ROLES } from '../../constants';
+import List from './List';
+import Add from './Add';
+import Page404 from '../../components/Common/Page404';
 
 class Merchant extends React.PureComponent {
-  componentDidMount() {
-    this.props.fetchMerchants();
-  }
-
   render() {
-    const { merchants, columns } = this.props;
+    const { user } = this.props;
 
     return (
-      <div className='merchants'>
-        <SubPage title={'Merchant List'} isMenuOpen={null} />
-        <Table
-          data={merchants}
-          columns={columns}
-          striped={true}
-          hover={true}
-          condensed={true}
-          csv={true}
-          search={true}
-        />
+      <div className='merchant-dashboard'>
+        <Switch>
+          <Route exact path='/dashboard/merchant' component={List} />
+          {user.role === ROLES.Admin && (
+            <Route exact path='/dashboard/merchant/add' component={Add} />
+          )}
+          <Route path='*' component={Page404} />
+        </Switch>
       </div>
     );
   }
@@ -39,12 +35,8 @@ class Merchant extends React.PureComponent {
 
 const mapStateToProps = state => {
   return {
-    merchants: state.merchant.merchants,
-    columns: state.merchant.columns
+    user: state.account.user
   };
 };
 
-export default connect(
-  mapStateToProps,
-  actions
-)(Merchant);
+export default connect(mapStateToProps, actions)(Merchant);

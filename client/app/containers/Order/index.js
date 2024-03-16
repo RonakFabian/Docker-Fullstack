@@ -5,32 +5,33 @@
  */
 
 import React from 'react';
+
 import { connect } from 'react-redux';
+import { Switch, Route } from 'react-router-dom';
 
-import { Link } from 'react-router-dom';
-
+import { ROLES } from '../../constants';
 import actions from '../../actions';
-
-import SubPage from '../../components/SubPage';
-import OrderList from '../../components/OrderList';
+import List from './List';
+import Customer from './Customer';
+import Page404 from '../../components/Common/Page404';
 
 class Order extends React.PureComponent {
-  componentDidMount() {
-    this.props.fetchOrders();
-  }
-
   render() {
-    const { orders, isOrderAddOpen, toggleAddOrder } = this.props;
+    const { user } = this.props;
 
     return (
-      <div className='order'>
-        <SubPage
-          title={isOrderAddOpen ? 'Recommended Items' : 'Order List'}
-          isMenuOpen={isOrderAddOpen}
-          toggleMenu={toggleAddOrder}
-        >
-          {isOrderAddOpen ? <p>Nothing...</p> : <OrderList orders={orders} />}
-        </SubPage>
+      <div className='product-dashboard'>
+        <Switch>
+          <Route exact path='/dashboard/orders' component={List} />
+          {user.role === ROLES.Admin && (
+            <Route
+              exact
+              path='/dashboard/orders/customers'
+              component={Customer}
+            />
+          )}
+          <Route path='*' component={Page404} />
+        </Switch>
       </div>
     );
   }
@@ -38,8 +39,7 @@ class Order extends React.PureComponent {
 
 const mapStateToProps = state => {
   return {
-    orders: state.order.orders,
-    isOrderAddOpen: state.order.isOrderAddOpen
+    user: state.account.user
   };
 };
 

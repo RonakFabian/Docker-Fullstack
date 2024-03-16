@@ -18,9 +18,9 @@ import navigationReducer from './containers/Navigation/reducer';
 import authenticationReducer from './containers/Authentication/reducer';
 import cartReducer from './containers/Cart/reducer';
 import newsletterReducer from './containers/Newsletter/reducer';
-import customerReducer from './containers/Customer/reducer';
-import adminReducer from './containers/Admin/reducer';
+import dashboardReducer from './containers/Dashboard/reducer';
 import accountReducer from './containers/Account/reducer';
+import addressReducer from './containers/Address/reducer';
 import resetPasswordReducer from './containers/ResetPassword/reducer';
 import usersReducer from './containers/Users/reducer';
 import productReducer from './containers/Product/reducer';
@@ -31,12 +31,14 @@ import shopReducer from './containers/Shop/reducer';
 import merchantReducer from './containers/Merchant/reducer';
 import contactReducer from './containers/Contact/reducer';
 import orderReducer from './containers/Order/reducer';
+import reviewReducer from './containers/Review/reducer';
+import wishListReducer from './containers/WishList/reducer';
 
 const createReducer = history =>
   combineReducers({
     router: connectRouter(history),
     notifications,
-    applicaiton: applicationReducer,
+    application: applicationReducer,
     homepage: homepageReducer,
     signup: signupReducer,
     login: loginReducer,
@@ -45,9 +47,9 @@ const createReducer = history =>
     authentication: authenticationReducer,
     cart: cartReducer,
     newsletter: newsletterReducer,
-    customer: customerReducer,
-    admin: adminReducer,
+    dashboard: dashboardReducer,
     account: accountReducer,
+    address: addressReducer,
     resetPassword: resetPasswordReducer,
     users: usersReducer,
     product: productReducer,
@@ -57,7 +59,9 @@ const createReducer = history =>
     shop: shopReducer,
     merchant: merchantReducer,
     contact: contactReducer,
-    order: orderReducer
+    order: orderReducer,
+    review: reviewReducer,
+    wishlist: wishListReducer
   });
 
 export default createReducer;

@@ -4,11 +4,21 @@
  *
  */
 
-import { TOGGLE_MENU, TOGGLE_CART } from './constants';
+import {
+  TOGGLE_MENU,
+  TOGGLE_CART,
+  TOGGLE_BRAND,
+  SEARCH_CHANGE,
+  SUGGESTIONS_FETCH_REQUEST,
+  SUGGESTIONS_CLEAR_REQUEST
+} from './constants';
 
 const initialState = {
   isMenuOpen: false,
-  isCartOpen: false
+  isCartOpen: false,
+  isBrandOpen: false,
+  searchValue: '',
+  searchSuggestions: []
 };
 
 const navigationReducer = (state = initialState, action) => {
@@ -24,6 +34,26 @@ const navigationReducer = (state = initialState, action) => {
         ...state,
         isCartOpen: !state.isCartOpen,
         isMenuOpen: false
+      };
+    case TOGGLE_BRAND:
+      return {
+        ...state,
+        isBrandOpen: !state.isBrandOpen
+      };
+    case SEARCH_CHANGE:
+      return {
+        ...state,
+        searchValue: action.payload
+      };
+    case SUGGESTIONS_FETCH_REQUEST:
+      return {
+        ...state,
+        searchSuggestions: action.payload
+      };
+    case SUGGESTIONS_CLEAR_REQUEST:
+      return {
+        ...state,
+        searchSuggestions: action.payload
       };
     default:
       return state;

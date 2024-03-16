@@ -9,9 +9,11 @@ import { connect } from 'react-redux';
 
 import actions from '../../actions';
 
-import CartList from '../../components/CartList';
-import CartSummary from '../../components/CartSummary';
-import Checkout from '../../components/Checkout';
+import CartList from '../../components/Store/CartList';
+import CartSummary from '../../components/Store/CartSummary';
+import Checkout from '../../components/Store/Checkout';
+import { BagIcon, CloseIcon } from '../../components/Common/Icon';
+import Button from '../../components/Common/Button';
 
 class Cart extends React.PureComponent {
   render() {
@@ -30,17 +32,27 @@ class Cart extends React.PureComponent {
     return (
       <div className='cart'>
         <div className='cart-header'>
-          {isCartOpen && <span className='close-icon' onClick={toggleCart} />}
+          {isCartOpen && (
+            <Button
+              borderless
+              variant='empty'
+              ariaLabel='close the cart'
+              icon={<CloseIcon />}
+              onClick={toggleCart}
+            />
+          )}
         </div>
         {cartItems.length > 0 ? (
           <div className='cart-body'>
             <CartList
+              toggleCart={toggleCart}
               cartItems={cartItems}
               handleRemoveFromCart={handleRemoveFromCart}
             />
           </div>
         ) : (
           <div className='empty-cart'>
+            <BagIcon />
             <p>Your shopping cart is empty</p>
           </div>
         )}

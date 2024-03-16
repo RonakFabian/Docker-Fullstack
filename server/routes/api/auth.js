@@ -3,84 +3,102 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const passport = require('passport');
+
+const auth = require('../../middleware/auth');
 
 // Bring in Models & Helpers
 const User = require('../../models/user');
-const mailgun = require('../../config/mailgun');
-const template = require('../../config/template');
+const mailchimp = require('../../services/mailchimp');
+const mailgun = require('../../services/mailgun');
+const keys = require('../../config/keys');
+const { EMAIL_PROVIDER, JWT_COOKIE } = require('../../constants');
 
-const key = process.env.SECRET_OR_KEY;
+const { secret, tokenLife } = keys.jwt;
 
-router.post('/login', (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ error: 'You must enter an email address.' });
-  }
+    if (!email) {
+      return res
+        .status(400)
+        .json({ error: 'You must enter an email address.' });
+    }
 
-  if (!password) {
-    return res.status(400).json({ error: 'You must enter a password.' });
-  }
+    if (!password) {
+      return res.status(400).json({ error: 'You must enter a password.' });
+    }
 
-  User.findOne({ email }).then(user => {
+    const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(400)
-        .send({ error: 'no user found for this email address.' });
+        .send({ error: 'No user found for this email address.' });
     }
-    bcrypt.compare(password, user.password).then(isMatch => {
-      if (isMatch) {
-        const payload = { id: user.id };
-        jwt.sign(payload, key, { expiresIn: 3600 }, (err, token) => {
-          res.status(200).json({
-            success: true,
-            token: `Bearer ${token}`,
-            user: {
-              id: user.id,
-              profile: {
-                firstName: user.profile.firstName,
-                lastName: user.profile.lastName,
-                is_subscribed: user.profile.is_subscribed
-              },
-              email: user.email,
-              role: user.role
-            }
-          });
-        });
-      } else {
-        return res.status(404).json({
-          success: false,
-          error: 'Password Incorrect'
-        });
+
+    if (user && user.provider !== EMAIL_PROVIDER.Email) {
+      return res.status(400).send({
+        error: `That email address is already in use using ${user.provider} provider.`
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password Incorrect'
+      });
+    }
+
+    const payload = {
+      id: user.id
+    };
+
+    const token = jwt.sign(payload, secret, { expiresIn: tokenLife });
+
+    if (!token) {
+      throw new Error();
+    }
+
+    res.status(200).json({
+      success: true,
+      token: `Bearer ${token}`,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
       }
     });
-  });
+  } catch (error) {
+    res.status(400).json({
+      error: 'Your request could not be processed. Please try again.'
+    });
+  }
 });
 
-router.post('/register', (req, res, next) => {
-  const email = req.body.email;
-  const firstName = req.body.firstName;
-  const lastName = req.body.lastName;
-  const password = req.body.password;
-  const is_subscribed = req.body.isSubscribed;
+router.post('/register', async (req, res) => {
+  try {
+    const { email, firstName, lastName, password, isSubscribed } = req.body;
 
-  if (!email) {
-    return res.status(400).json({ error: 'You must enter an email address.' });
-  }
-
-  if (!firstName || !lastName) {
-    return res.status(400).json({ error: 'You must enter your full name.' });
-  }
-
-  if (!password) {
-    return res.status(400).json({ error: 'You must enter a password.' });
-  }
-
-  User.findOne({ email }, (err, existingUser) => {
-    if (err) {
-      return next(err);
+    if (!email) {
+      return res
+        .status(400)
+        .json({ error: 'You must enter an email address.' });
     }
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ error: 'You must enter your full name.' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'You must enter a password.' });
+    }
+
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       return res
@@ -88,203 +106,244 @@ router.post('/register', (req, res, next) => {
         .json({ error: 'That email address is already in use.' });
     }
 
+    let subscribed = false;
+    if (isSubscribed) {
+      const result = await mailchimp.subscribeToNewsletter(email);
+
+      if (result.status === 'subscribed') {
+        subscribed = true;
+      }
+    }
+
     const user = new User({
       email,
       password,
-      profile: { firstName, lastName, is_subscribed }
+      firstName,
+      lastName
     });
 
-    bcrypt.genSalt(10, (err, salt) => {
-      bcrypt.hash(user.password, salt, (err, hash) => {
-        if (err) {
-          return res.status(400).json({
-            error: 'Your request could not be processed. Please try again.'
-          });
-        }
-        user.password = hash;
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(user.password, salt);
 
-        user.save((err, user) => {
-          if (err) {
-            return res.status(400).json({
-              error: 'Your request could not be processed. Please try again.'
-            });
-          }
+    user.password = hash;
+    const registeredUser = await user.save();
 
-          const payload = { id: user.id };
+    const payload = {
+      id: registeredUser.id
+    };
 
-          jwt.sign(payload, key, { expiresIn: 3600 }, (err, token) => {
-            res.status(200).json({
-              success: true,
-              token: `Bearer ${token}`,
-              user: {
-                id: user.id,
-                profile: {
-                  firstName: user.profile.firstName,
-                  lastName: user.profile.lastName,
-                  is_subscribed: user.profile.is_subscribed
-                },
-                email: user.email,
-                role: user.role
-              }
-            });
-          });
+    await mailgun.sendEmail(
+      registeredUser.email,
+      'signup',
+      null,
+      registeredUser
+    );
 
-          const message = template.signupEmail(user.profile);
+    const token = jwt.sign(payload, secret, { expiresIn: tokenLife });
 
-          mailgun.sendEmail(user.email, message);
-        });
-      });
+    res.status(200).json({
+      success: true,
+      subscribed,
+      token: `Bearer ${token}`,
+      user: {
+        id: registeredUser.id,
+        firstName: registeredUser.firstName,
+        lastName: registeredUser.lastName,
+        email: registeredUser.email,
+        role: registeredUser.role
+      }
     });
-  });
+  } catch (error) {
+    res.status(400).json({
+      error: 'Your request could not be processed. Please try again.'
+    });
+  }
 });
 
-router.post('/forgot', (req, res, next) => {
-  const email = req.body.email;
+router.post('/forgot', async (req, res) => {
+  try {
+    const { email } = req.body;
 
-  User.findOne({ email }, (err, existingUser) => {
-    if (err || existingUser == null) {
-      return res.status(400).json({
-        error:
-          'Your request could not be processed as entered. Please try again.'
-      });
+    if (!email) {
+      return res
+        .status(400)
+        .json({ error: 'You must enter an email address.' });
     }
 
-    crypto.randomBytes(48, (err, buffer) => {
-      const resetToken = buffer.toString('hex');
-      if (err) {
-        return res.status(400).json({
-          error: 'Your request could not be processed. Please try again.'
-        });
-      }
+    const existingUser = await User.findOne({ email });
 
-      existingUser.resetPasswordToken = resetToken;
-      existingUser.resetPasswordExpires = Date.now() + 3600000;
+    if (!existingUser) {
+      return res
+        .status(400)
+        .send({ error: 'No user found for this email address.' });
+    }
 
-      existingUser.save(err => {
-        if (err) {
-          return res.status(400).json({
-            error: 'Your request could not be processed. Please try again.'
-          });
-        }
+    const buffer = crypto.randomBytes(48);
+    const resetToken = buffer.toString('hex');
 
-        const message = template.resetEmail(req, resetToken);
+    existingUser.resetPasswordToken = resetToken;
+    existingUser.resetPasswordExpires = Date.now() + 3600000;
 
-        mailgun.sendEmail(existingUser.email, message);
+    existingUser.save();
 
-        return res.status(200).json({
-          success: true,
-          message:
-            'Please check your email for the link to reset your password.'
-        });
-      });
+    await mailgun.sendEmail(
+      existingUser.email,
+      'reset',
+      req.headers.host,
+      resetToken
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Please check your email for the link to reset your password.'
     });
-  });
+  } catch (error) {
+    res.status(400).json({
+      error: 'Your request could not be processed. Please try again.'
+    });
+  }
 });
 
-router.post('/reset/:token', (req, res, next) => {
-  const password = req.body.password;
+router.post('/reset/:token', async (req, res) => {
+  try {
+    const { password } = req.body;
 
-  if (!password) {
-    return res.status(400).json({ error: 'You must enter a password.' });
-  }
+    if (!password) {
+      return res.status(400).json({ error: 'You must enter a password.' });
+    }
 
-  User.findOne(
-    {
+    const resetUser = await User.findOne({
       resetPasswordToken: req.params.token,
       resetPasswordExpires: { $gt: Date.now() }
-    },
-    (err, resetUser) => {
-      if (!resetUser) {
-        return res.status(400).json({
-          error:
-            'Your token has expired. Please attempt to reset your password again.'
-        });
-      }
-      bcrypt.genSalt(10, (err, salt) => {
-        bcrypt.hash(req.body.password, salt, (err, hash) => {
-          if (err) {
-            return res.status(400).json({
-              error:
-                'Your request could not be processed as entered. Please try again.'
-            });
-          }
-          req.body.password = hash;
+    });
 
-          resetUser.password = req.body.password;
-          resetUser.resetPasswordToken = undefined;
-          resetUser.resetPasswordExpires = undefined;
-
-          resetUser.save(err => {
-            if (err) {
-              return res.status(400).json({
-                error:
-                  'Your request could not be processed as entered. Please try again.'
-              });
-            }
-
-            const message = template.confirmResetPasswordEmail();
-            mailgun.sendEmail(resetUser.email, message);
-
-            return res.status(200).json({
-              success: true,
-              message:
-                'Password changed successfully. Please login with your new password.'
-            });
-          });
-        });
-      });
-    }
-  );
-});
-
-router.post('/reset', (req, res, next) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  if (!password) {
-    return res.status(400).json({ error: 'You must enter a password.' });
-  }
-
-  User.findOne({ email }, (err, existingUser) => {
-    if (err || existingUser == null) {
+    if (!resetUser) {
       return res.status(400).json({
         error:
-          'Your request could not be processed as entered. Please try again.'
+          'Your token has expired. Please attempt to reset your password again.'
       });
     }
 
-    bcrypt.genSalt(10, (err, salt) => {
-      bcrypt.hash(req.body.password, salt, (err, hash) => {
-        if (err) {
-          return res.status(400).json({
-            error:
-              'Your request could not be processed as entered. Please try again.'
-          });
-        }
-        req.body.password = hash;
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
 
-        existingUser.password = req.body.password;
+    resetUser.password = hash;
+    resetUser.resetPasswordToken = undefined;
+    resetUser.resetPasswordExpires = undefined;
 
-        existingUser.save(err => {
-          if (err) {
-            return res.status(400).json({
-              error:
-                'Your request could not be processed as entered. Please try again.'
-            });
-          }
+    resetUser.save();
 
-          const message = template.confirmResetPasswordEmail();
-          mailgun.sendEmail(existingUser.email, message);
+    await mailgun.sendEmail(resetUser.email, 'reset-confirmation');
 
-          return res.status(200).json({
-            success: true,
-            message:
-              'Password changed successfully. Please login with your new password.'
-          });
-        });
-      });
+    res.status(200).json({
+      success: true,
+      message:
+        'Password changed successfully. Please login with your new password.'
     });
-  });
+  } catch (error) {
+    res.status(400).json({
+      error: 'Your request could not be processed. Please try again.'
+    });
+  }
 });
+
+router.post('/reset', auth, async (req, res) => {
+  try {
+    const { password, confirmPassword } = req.body;
+    const email = req.user.email;
+
+    if (!email) {
+      return res.status(401).send('Unauthenticated');
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'You must enter a password.' });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      return res
+        .status(400)
+        .json({ error: 'That email address is already in use.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ error: 'Please enter your correct old password.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(confirmPassword, salt);
+    existingUser.password = hash;
+    existingUser.save();
+
+    await mailgun.sendEmail(existingUser.email, 'reset-confirmation');
+
+    res.status(200).json({
+      success: true,
+      message:
+        'Password changed successfully. Please login with your new password.'
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: 'Your request could not be processed. Please try again.'
+    });
+  }
+});
+
+router.get(
+  '/google',
+  passport.authenticate('google', {
+    session: false,
+    scope: ['profile', 'email'],
+    accessType: 'offline',
+    approvalPrompt: 'force'
+  })
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: `${keys.app.clientURL}/login`,
+    session: false
+  }),
+  (req, res) => {
+    const payload = {
+      id: req.user.id
+    };
+
+    // TODO find another way to send the token to frontend
+    const token = jwt.sign(payload, secret, { expiresIn: tokenLife });
+    const jwtToken = `Bearer ${token}`;
+    res.redirect(`${keys.app.clientURL}/auth/success?token=${jwtToken}`);
+  }
+);
+
+router.get(
+  '/facebook',
+  passport.authenticate('facebook', {
+    session: false,
+    scope: ['public_profile', 'email']
+  })
+);
+
+router.get(
+  '/facebook/callback',
+  passport.authenticate('facebook', {
+    failureRedirect: `${keys.app.clientURL}/login`,
+    session: false
+  }),
+  (req, res) => {
+    const payload = {
+      id: req.user.id
+    };
+    const token = jwt.sign(payload, secret, { expiresIn: tokenLife });
+    const jwtToken = `Bearer ${token}`;
+    res.redirect(`${keys.app.clientURL}/auth/success?token=${jwtToken}`);
+  }
+);
 
 module.exports = router;

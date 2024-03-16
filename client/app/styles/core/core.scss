@@ -16,10 +16,13 @@
 @import 'rtl';
 
 // components
+@import 'components';
 @import 'footer';
 @import 'header';
 @import 'input';
+@import 'button';
 @import 'checkbox';
+@import 'switch';
 @import 'spinner';
 @import 'cart';
 @import 'newsletter';
@@ -32,12 +35,19 @@
 @import 'product';
 @import 'category';
 @import 'brand';
+@import 'address';
 @import 'subpage';
 @import 'table';
 @import 'menu';
 @import 'shop';
 @import 'checkout';
 @import 'merchant';
-@import 'contact';
 @import 'coming-soon';
-@import 'order-success';
+@import 'order';
+@import 'review';
+@import 'wishlist';
+@import 'share';
+@import 'search';
+@import 'radio';
+@import 'badge';
+@import 'support';

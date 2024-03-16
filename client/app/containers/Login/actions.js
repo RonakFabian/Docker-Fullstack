@@ -6,12 +6,22 @@
 
 import { success } from 'react-notification-system-redux';
 import axios from 'axios';
-import cookie from 'react-cookies';
+import { push } from 'connected-react-router';
 
-import { LOGIN_CHANGE, LOGIN_RESET, SET_LOGIN_LOADING } from './constants';
-import { setAuth, setUnAuth } from '../Authentication/actions';
+import {
+  LOGIN_CHANGE,
+  LOGIN_RESET,
+  SET_LOGIN_LOADING,
+  SET_LOGIN_FORM_ERRORS,
+  SET_LOGIN_SUBMITTING
+} from './constants';
+import { setAuth, clearAuth } from '../Authentication/actions';
 import setToken from '../../utils/token';
 import handleError from '../../utils/error';
+import { clearCart } from '../Cart/actions';
+import { clearAccount } from '../Account/actions';
+import { allFieldsValidation } from '../../utils/validation';
+import { API_URL } from '../../constants';
 
 export const loginChange = (name, value) => {
   let formData = {};
@@ -25,22 +35,39 @@ export const loginChange = (name, value) => {
 
 export const login = () => {
   return async (dispatch, getState) => {
-    dispatch({ type: SET_LOGIN_LOADING, payload: true });
+    const rules = {
+      email: 'required|email',
+      password: 'required|min:6'
+    };
 
     const user = getState().login.loginFormData;
 
+    const { isValid, errors } = allFieldsValidation(user, rules, {
+      'required.email': 'Email is required.',
+      'email.email': 'Email format is invalid.',
+      'required.password': 'Password is required.',
+      'min.password': 'Password must be at least 6 characters.'
+    });
+
+    if (!isValid) {
+      return dispatch({ type: SET_LOGIN_FORM_ERRORS, payload: errors });
+    }
+
+    dispatch({ type: SET_LOGIN_SUBMITTING, payload: true });
+    dispatch({ type: SET_LOGIN_LOADING, payload: true });
+
     try {
-      const response = await axios.post('/api/auth/login', user);
+      const response = await axios.post(`${API_URL}/auth/login`, user);
+
+      const firstName = response.data.user.firstName;
 
       const successfulOptions = {
-        title: `Hey ${response.data.user.profile.firstName}, Welcome Back!`,
+        title: `Hey${firstName ? ` ${firstName}` : ''}, Welcome Back!`,
         position: 'tr',
         autoDismiss: 1
       };
 
-      cookie.save('token', response.data.token, { path: '/' });
-      cookie.save('user', response.data.user.id, { path: '/' });
-      cookie.save('role', response.data.user.role, { path: '/' });
+      localStorage.setItem('token', response.data.token);
 
       setToken(response.data.token);
 
@@ -50,9 +77,9 @@ export const login = () => {
       dispatch({ type: LOGIN_RESET });
     } catch (error) {
       const title = `Please try to login again!`;
-
-      handleError(error, title, dispatch);
+      handleError(error, dispatch, title);
     } finally {
+      dispatch({ type: SET_LOGIN_SUBMITTING, payload: false });
       dispatch({ type: SET_LOGIN_LOADING, payload: false });
     }
   };
@@ -60,18 +87,19 @@ export const login = () => {
 
 export const signOut = () => {
   return (dispatch, getState) => {
-    dispatch(setUnAuth());
-
     const successfulOptions = {
       title: `You have signed out!`,
       position: 'tr',
       autoDismiss: 1
     };
 
-    dispatch(success(successfulOptions));
+    dispatch(clearAuth());
+    dispatch(clearAccount());
+    dispatch(push('/login'));
 
-    cookie.remove('token', { path: '/' });
-    cookie.remove('user', { path: '/' });
-    cookie.remove('role', { path: '/' });
+    localStorage.removeItem('token');
+
+    dispatch(success(successfulOptions));
+    // dispatch(clearCart());
   };
 };

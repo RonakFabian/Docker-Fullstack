@@ -1,5 +1,4 @@
 // footer styles
-
 .footer {
   flex-shrink: 0;
   border-top: $border-default;
@@ -16,15 +15,19 @@
 
 .footer-block {
   width: 100%;
-  margin: 0px 15px;
-  border-right: $border-default;
-  padding: 20px 20px 40px 0;
+  margin-right: 16px;
+  border-right: $border-primary;
+  padding-top: 20px;
+
+  &:last-child {
+    margin-right: 0;
+  }
 
   @include media-breakpoint-down(sm) {
     text-align: center;
     margin: 10px 0px;
     border-right: none;
-    border-bottom: $border-default;
+    border-bottom: $border-primary;
     padding: 20px 0px;
   }
 
@@ -35,10 +38,6 @@
 
   .block-title {
     padding-bottom: 10px;
-
-    h2 {
-      color: $red !important;
-    }
   }
 
   .footer-link {
@@ -46,8 +45,7 @@
 
     a {
       &:hover {
-        // color: $red !important;
-        color: $theme-black !important;
+        text-decoration: underline !important;
       }
     }
   }
@@ -94,6 +92,7 @@
   .instagram-icon {
     @include icon($instagram, 40px, 40px);
     background-size: 100%;
+    border-radius: 50%;
   }
 
   .pinterest-icon {
@@ -113,14 +112,5 @@
 
 .footer-copyright {
   text-align: center;
-  padding: 15px 0px;
-}
-
-/*
- * Contact us block
- */
-
-.contact-us-block {
-  text-align: center;
-  padding: 15px 0px;
+  padding: 16px 0px;
 }

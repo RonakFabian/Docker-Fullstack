@@ -1,14 +1,14 @@
 /**
  *
  * error.js
- * This is a generic error handler, it receves the error returned from the server and present it on a pop up
+ * This is a generic error handler, it receives the error returned from the server and present it on a pop up
  */
 
 import { error } from 'react-notification-system-redux';
 
 import { signOut } from '../containers/Login/actions';
 
-const handleError = (err, title, dispatch) => {
+const handleError = (err, dispatch, title = '') => {
   const unsuccessfulOptions = {
     title: `${title}`,
     message: ``,
@@ -16,20 +16,33 @@ const handleError = (err, title, dispatch) => {
     autoDismiss: 1
   };
 
-  if (err.hasOwnProperty('response') && err.response.status != 401) {
-    unsuccessfulOptions.message = err.response.data.error;
-  } else if (err.hasOwnProperty('response') && err.response.status == 401) {
-    unsuccessfulOptions.message = 'Unauthorized Access! Please login again';
-    dispatch(signOut());
+  if (err.response) {
+    if (err.response.status === 400) {
+      unsuccessfulOptions.title = title ? title : 'Please Try Again!';
+      unsuccessfulOptions.message = err.response.data.error;
+      dispatch(error(unsuccessfulOptions));
+    } else if (err.response.status === 404) {
+      // unsuccessfulOptions.title =
+      //   err.response.data.message ||
+      //   'Your request could not be processed. Please try again.';
+      // dispatch(error(unsuccessfulOptions));
+    } else if (err.response.status === 401) {
+      unsuccessfulOptions.message = 'Unauthorized Access! Please login again';
+      dispatch(signOut());
+      dispatch(error(unsuccessfulOptions));
+    } else if (err.response.status === 403) {
+      unsuccessfulOptions.message =
+        'Forbidden! You are not allowed to access this resource.';
+      dispatch(error(unsuccessfulOptions));
+    }
   } else if (err.message) {
     unsuccessfulOptions.message = err.message;
-  } else if (err.request) {
-    unsuccessfulOptions.message = err.request;
+    dispatch(error(unsuccessfulOptions));
   } else {
-    unsuccessfulOptions.message = err.message;
+    // fallback
+    unsuccessfulOptions.message =
+      'Your request could not be processed. Please try again.';
   }
-
-  dispatch(error(unsuccessfulOptions));
 };
 
 export default handleError;

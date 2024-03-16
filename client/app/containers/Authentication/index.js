@@ -5,20 +5,20 @@
  */
 
 import React from 'react';
+
 import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
 
 import actions from '../../actions';
 
-export default function(ComposedComponent) {
+export default function (ComposedComponent) {
   class Authentication extends React.PureComponent {
-    componentWillMount() {}
-
     render() {
       const { authenticated } = this.props;
 
-      if (!authenticated) return <Redirect to='/login' />;
-      else {
+      if (!authenticated) {
+        return <Redirect to='/login' />;
+      } else {
         return <ComposedComponent {...this.props} />;
       }
     }
@@ -30,8 +30,5 @@ export default function(ComposedComponent) {
     };
   };
 
-  return connect(
-    mapStateToProps,
-    actions
-  )(Authentication);
+  return connect(mapStateToProps, actions)(Authentication);
 }
